@@ -1,6 +1,7 @@
 (function ($) {
     var apiUrl = 'http://127.0.0.1:8000/api';
     var globalOptions = [];
+    var globalInputs = [];
 
     function fragmentFromString(strHTML) {
         return document.createRange().createContextualFragment(strHTML);
@@ -20,17 +21,31 @@
         },
         send: function (e) {
             console.log('click', e);
+            const stepId = $('input[name="step"]').val();
             console.log($('#formData').serialize());
             var data = $('#formData').serialize();
             $.post(`${apiUrl}/changeStep`, data)
                 .done(function (data) {
                     console.log(data);
+                    if (typeof data === 'string') {
+                        alert(data);
+                        return;
+                    }
                     methods.renderForm(data);
                 })
                 .fail(function (error) {
                     "use strict";
                     console.log(error);
                 });
+        // $.post(`${apiUrl}/step/${stepId}/data`, data)
+        //         .done(function (data) {
+        //             console.log(data);
+        //             methods.renderForm(data);
+        //         })
+        //         .fail(function (error) {
+        //             "use strict";
+        //             console.log(error);
+        //         });
             e.preventDefault();
         },
         renderForm: function (service) {
@@ -40,10 +55,14 @@
             inputsHtml += `<h2>${step.name} step</h2>`;
             inputsHtml += `<input type="hidden" name="service" value="${service._id}">`;
             inputsHtml += `<input type="hidden" name="step" value="${step._id}">`;
+            if (service.user) {
+                inputsHtml += `<input type="hidden" name="user" value="${service.user._id}">`;
+            }
             var sections = step.sections;
             for (var section of sections) {
-                inputsHtml += section.label ? `<h2>${section.label}</h2>` : '';
+                inputsHtml += section.name ? `<h2>${section.name}</h2>` : '';
                 var inputs = section.inputs;
+                globalInputs = inputs;
                 for (var input of inputs) {
                     this.inputElement = input;
                     inputsHtml += `<div class="askartec-form-group">
@@ -57,12 +76,14 @@
                     <button class="next-send">Send</button>
                 </form>`;
             $root.html(form);
-            $('.linked-select').bind('change.formGenerator', methods.giveSelection);
+            // $('.linked-select').bind('change.formGenerator', methods.giveSelection);
             $('.next-send').bind('click.formGenerator', methods.send);
+            $('.linked-select').bind('change.formGenerator', methods.fillChildSelect);
+
         },
         generateInputElement: function (inputElement) {
             function simpleInput(input) {
-                return `<input type='${input.type}' name='${input.name}' ${input.required ? 'required' : ''} id='${input._id}'>`
+                return `<input type='${input.type}' name='${input._id}' ${input.required ? 'required' : ''} id='${input._id}'>`
             }
 
             function selectInput(input) {
@@ -70,13 +91,13 @@
                     var options = input.options;
                     var optionsHtml = `<option>--Choose--</option>`;
                     for (var option of options) {
-                        optionsHtml += `<option value='${option.value}' data-option='${option.data_option}'>${option.name}</option>`;
+                        optionsHtml += `<option value='${option._id}' data-option='${option.data_option}'>${option.value}</option>`;
                         globalOptions.push(option);
                     }
                     return optionsHtml;
                 }
 
-                return `<select name='${input.name}' ${input.required ? 'required' : ''} id='${input.name}' ${input.linked ? 'class="linked-select"' : ''}">
+                return `<select name='${input._id}_select' ${input.required ? 'required' : ''} id='${input.name}' ${input.child ? 'class="linked-select"' : ''}" child="${input.child}">
                     ${input.label}
                     ${optionRender()}
                 </select>`;
@@ -107,6 +128,24 @@
                     $sel2.append(optionHTML);
                 }
             }
+        },
+        fillChildSelect: function(e) {
+            $current = $(this);
+            var childId = $current.attr('child');
+            var parentOptionId = $current.val();
+            var child = globalInputs.find((function(input) {
+                return childId === input._id;
+            }));
+            $child = $(`#${child.name}`);
+            $.get(`${apiUrl}/option/${parentOptionId}/options`, function(options) {
+                $child.html('');
+                $child.append(`<option>--Choose--</option>`);
+                for (var i = 0; i<options.length; i++) {
+                    let option = `<option value='${options[i]._id}'>${options[i].value}</option>`;
+                    let optionHTML = fragmentFromString(option);
+                    $child.append(optionHTML);
+                }
+            });
         }
     };
 
