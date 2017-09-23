@@ -10,7 +10,7 @@
     var methods = {
         init: function (options) {
             console.log('init', this);
-            $.get(`http://127.0.0.1:8000/api/service/${options.service}`)
+            $.get(`http://${options.host}/api/service/${options.service}`)
                 .done(function (data) {
                     console.log(data);
                     methods.renderForm(data);
