@@ -32,6 +32,7 @@
 // });
 
 var gulp = require('gulp');
+var babel = require('gulp-babel');
 var browserify = require('browserify');
 var babelify   = require('babelify');
 var gutil = require('gulp-util');
@@ -68,3 +69,11 @@ gulp.task('js', function () {
 
         .pipe(gulp.dest('public/js/'));
 });
+
+gulp.task('compile', function() {
+    gulp.src('./sources/js/fg.jquery.min.js')
+        .pipe(babel())
+        .pipe(uglify())
+        .pipe(gulp.dest('./public/js/'))
+});
+
