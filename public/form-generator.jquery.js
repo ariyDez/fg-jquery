@@ -1,5 +1,6 @@
 (function ($) {
     var apiUrl = 'http://127.0.0.1:8000/api';
+    var language = 'ru';
     var globalOptions = [];
     var globalInputs = [];
 
@@ -9,6 +10,8 @@
 
     var methods = {
         init: function (options) {
+            apiUrl = `http://${options.host}/api`;
+            language = options.language;
             console.log('init', this);
             $.get(`http://${options.host}/api/service/${options.service}`)
                 .done(function (data) {
@@ -62,11 +65,11 @@
             for (var section of sections) {
                 inputsHtml += section.name ? `<h2>${section.name}</h2>` : '';
                 var inputs = section.inputs;
-                globalInputs = inputs;
+                globalInputs = globalInputs.concat(inputs);
                 for (var input of inputs) {
                     this.inputElement = input;
                     inputsHtml += `<div class="askartec-form-group">
-                    <label for="${input._id}">${input.label}${input.required ? '*' : ''}:</label>
+                    <label for="${input._id}">${this.getLabel(input._id, language)}${input.required ? '*' : ''}:</label>
                     ${this.generateInputElement(input)}
                     </div>`;
                 }
@@ -146,6 +149,11 @@
                     $child.append(optionHTML);
                 }
             });
+        },
+        getLabel: function(inputId, language) {
+            const input = globalInputs.find((input) => input._id === inputId);
+            const inpLanguage = input.languages.find((lang) => lang.alias === language);
+            return inpLanguage ? inpLanguage.text : 'no label';
         }
     };
 
